@@ -40,6 +40,11 @@ from PyQt5.QtWidgets import (
 SECONDS_IN_DAY = 24 * 60 * 60
 MIN_CONFIRM_SECONDS = 5 * 60
 
+def resource_path(relative_path: str) -> str:
+    """Get absolute path to resource, works for dev and for PyInstaller onefile."""
+    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
+    return os.path.join(base_path, relative_path)
+
 
 @dataclass(frozen=True)
 class ShutdownCommand:
@@ -146,7 +151,7 @@ class MainWindow(QWidget):
         self.setWindowTitle("Shutdown Timer")
 
         # Icon is optional; don't crash if missing
-        icon_path = "ShutDownPC_Icon.ico"
+        icon_path = resource_path("ShutDownPC_Icon.ico")
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 

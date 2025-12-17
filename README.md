@@ -45,11 +45,36 @@ pip install PyQt5
 
 ---
 
-## 🚀 How to Run
-```bash
-python ShutDownPC.py
-```
+## 📦 Running Prebuilt Releases (No Python Required)
 
+Download the correct archive from the **Releases** page and unpack it.
+
+### Windows
+1. Download `ShutdownTimer-<version>-windows.zip`
+2. Unzip it
+3. Run `ShutdownTimer-<version>.exe`
+
+> If SmartScreen warns you, click **More info → Run anyway**.
+
+### Linux
+1. Download `ShutdownTimer-<version>-linux.zip`
+2. Unzip it
+3. Make it executable and run:
+```bash
+chmod +x ShutdownTimer-<version>
+./ShutdownTimer-<version>
+```
+> Note: scheduling shutdown may require admin permissions depending on your system configuration.
+
+### macOS
+1. Download ShutdownTimer-<version>-macos.zip
+2. Unzip it (you will get ShutdownTimer-<version>.app)
+3. Move the app to /Applications (optional)
+4. If macOS blocks it (Gatekeeper), run:
+```bash
+xattr -dr com.apple.quarantine "ShutdownTimer-<version>.app"
+```
+5. Then open the app again.
 ---
 
 ## 🕹️ How It Works 
