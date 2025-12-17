@@ -1,9 +1,10 @@
 name: Build and Release
 
 on:
+  workflow_dispatch: {}
   push:
-    tags:
-      - "v*.*.*"   # например v1.0.0
+    branches:
+      - master
 
 permissions:
   contents: write 
