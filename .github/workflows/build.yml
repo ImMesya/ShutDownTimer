@@ -1,0 +1,92 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"   # например v1.0.0
+
+permissions:
+  contents: write 
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      # -------- BUILD (Windows) --------
+      - name: Build (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          pyinstaller --noconfirm --onefile --windowed ^
+            --name ShutdownTimer ^
+            --icon ShutDownPC_Icon.png ^
+            --add-data "ShutDownPC_Icon.png;." ^
+            ShutDownPC.py
+          powershell -Command "Compress-Archive -Force dist/ShutdownTimer.exe dist/ShutdownTimer-windows.zip"
+
+      # -------- BUILD (Linux) --------
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          pyinstaller --noconfirm --onefile --windowed \
+            --name ShutdownTimer \
+            --add-data "ShutDownPC_Icon.png:." \
+            ShutDownPC.py
+          cd dist
+          zip -r ShutdownTimer-linux.zip ShutdownTimer
+
+      # -------- BUILD (macOS) --------
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          pyinstaller --noconfirm --windowed \
+            --name ShutdownTimer \
+            --add-data "ShutDownPC_Icon.png:." \
+            ShutDownPC.py
+          cd dist
+          ditto -c -k --sequesterRsrc --keepParent ShutdownTimer.app ShutdownTimer-macos.zip
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ runner.os }}
+          path: |
+            dist/*.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List files
+        run: ls -R artifacts
+
+      - name: Create GitHub Release and upload assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/dist/*.zip
