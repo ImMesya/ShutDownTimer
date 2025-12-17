@@ -1,26 +1,50 @@
 name: Build and Release
 
 on:
-  workflow_dispatch: {}
   push:
-    branches:
-      - master
+    tags:
+      - "v*.*.*"
+  workflow_dispatch: {}
 
 permissions:
-  contents: write 
+  contents: write
+
+env:
+  APP_NAME: ShutdownTimer
+  ENTRYPOINT: ShutDownPC.py
+  ICON_FILE: ShutDownPC_Icon.png
 
 jobs:
   build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
     strategy:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
 
-    runs-on: ${{ matrix.os }}
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      # --- Version from tag / fallback for manual runs ---
+      - name: Set version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME}"          # e.g. v1.0.1
+            VERSION="${TAG#v}"                # e.g. 1.0.1
+            echo "TAG_NAME=${TAG}" >> $GITHUB_ENV
+            echo "APP_VERSION=${VERSION}" >> $GITHUB_ENV
+            echo "RELEASE_MODE=true" >> $GITHUB_ENV
+          else
+            # manual run fallback (no tag): version-like string for artifacts
+            SHORT_SHA="$(echo "${GITHUB_SHA}" | cut -c1-7)"
+            echo "TAG_NAME=manual-${SHORT_SHA}" >> $GITHUB_ENV
+            echo "APP_VERSION=0.0.0-${SHORT_SHA}" >> $GITHUB_ENV
+            echo "RELEASE_MODE=false" >> $GITHUB_ENV
+          fi
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -28,6 +52,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
+        shell: bash
         run: |
           python -m pip install -U pip
           pip install -r requirements.txt
@@ -36,42 +61,59 @@ jobs:
       # -------- BUILD (Windows) --------
       - name: Build (Windows)
         if: runner.os == 'Windows'
+        shell: powershell
         run: |
-          pyinstaller --noconfirm --onefile --windowed --name ShutdownTimer --icon ShutDownPC_Icon.png --add-data "ShutDownPC_Icon.png;." ShutDownPC.py
-          powershell -Command "Compress-Archive -Force dist/ShutdownTimer.exe dist/ShutdownTimer-windows.zip"
+          pyinstaller --noconfirm --onefile --windowed `
+            --name "${{ env.APP_NAME }}-${{ env.APP_VERSION }}" `
+            --icon "${{ env.ICON_FILE }}" `
+            --add-data "${{ env.ICON_FILE }};." `
+            "${{ env.ENTRYPOINT }}"
+
+          Compress-Archive -Force `
+            "dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}.exe" `
+            "dist/${{ env.APP_NAME }}-${{ env.APP_VERSION }}-windows.zip"
 
       # -------- BUILD (Linux) --------
       - name: Build (Linux)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           pyinstaller --noconfirm --onefile --windowed \
-            --name ShutdownTimer \
-            --add-data "ShutDownPC_Icon.png:." \
-            ShutDownPC.py
+            --name "${APP_NAME}-${APP_VERSION}" \
+            --add-data "${ICON_FILE}:." \
+            "${ENTRYPOINT}"
+
           cd dist
-          zip -r ShutdownTimer-linux.zip ShutdownTimer
+          zip -r "${APP_NAME}-${APP_VERSION}-linux.zip" "${APP_NAME}-${APP_VERSION}"
 
       # -------- BUILD (macOS) --------
       - name: Build (macOS)
         if: runner.os == 'macOS'
+        shell: bash
         run: |
           pyinstaller --noconfirm --windowed \
-            --name ShutdownTimer \
-            --add-data "ShutDownPC_Icon.png:." \
-            ShutDownPC.py
+            --name "${APP_NAME}-${APP_VERSION}" \
+            --add-data "${ICON_FILE}:." \
+            "${ENTRYPOINT}"
+
           cd dist
-          ditto -c -k --sequesterRsrc --keepParent ShutdownTimer.app ShutdownTimer-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent \
+            "${APP_NAME}-${APP_VERSION}.app" \
+            "${APP_NAME}-${APP_VERSION}-macos.zip"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build-${{ runner.os }}
+          name: ${{ env.APP_NAME }}-${{ env.APP_VERSION }}-${{ runner.os }}
           path: |
             dist/*.zip
 
   release:
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+
+    if: startsWith(github.ref, 'refs/tags/')
 
     steps:
       - name: Download artifacts
@@ -80,10 +122,13 @@ jobs:
           path: artifacts
 
       - name: List files
+        shell: bash
         run: ls -R artifacts
 
       - name: Create GitHub Release and upload assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           files: |
             artifacts/**/dist/*.zip
