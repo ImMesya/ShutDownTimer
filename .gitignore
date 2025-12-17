@@ -3,3 +3,10 @@
 .gitignore
 /create_exe.bat
 /ShutDownPC.spec
+/.idea/dictionaries
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/ShutDownTimer.iml
+/.idea/vcs.xml
