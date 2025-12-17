@@ -1,0 +1,5 @@
+/build/
+/dist/
+.gitignore
+/create_exe.bat
+/ShutDownPC.spec
