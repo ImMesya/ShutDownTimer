@@ -52,12 +52,12 @@ python ShutDownPC.py
 
 ---
 
-## 🕹️ How It Works
-- **Mode 1: Shut down at a specific time**
+## 🕹️ How It Works 
+### **Mode 1: Shut down at a specific time**
   - Select “Shut down at (time of day)”
   - Choose the desired time (HH:MM)
   - If the time already passed today, shutdown is scheduled for tomorrow
-- **Mode 2: Shut down after a delay**
+### **Mode 2: Shut down after a delay**
   - Select “Shut down after (HH:MM delay)”
   - Set the delay time (e.g. 01:30)
   - Countdown starts immediately
@@ -65,7 +65,7 @@ python ShutDownPC.py
 ---
 
 ## 🛑 Canceling Shutdown
-Once the timer is active:
+### Once the timer is active:
 - The **START** button changes to **CANCEL**
 - Press **CANCEL** to immediately abort the scheduled shutdown
 
@@ -73,11 +73,13 @@ Once the timer is active:
 
 ## 🧩 Project Structure
 
-```bash
-.
-├── ShutDownPC.py        # Main application
-├── ShutDownPC_Icon.png  # Optional app icon
-└── README.md            # This file
+```plaintext
+ShutdownTimer/
+├─ ShutDownPC.py
+├─ ShutDownPC_Icon.png
+├─ README.md
+├─ requirements.txt
+└─ .gitignore
 ```
 
 --- 
