@@ -146,7 +146,7 @@ class MainWindow(QWidget):
         self.setWindowTitle("Shutdown Timer")
 
         # Icon is optional; don't crash if missing
-        icon_path = "ShutDownPC_Icon.png"
+        icon_path = "ShutDownPC_Icon.ico"
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
 

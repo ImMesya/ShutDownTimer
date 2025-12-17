@@ -12,7 +12,7 @@ permissions:
 env:
   APP_NAME: ShutdownTimer
   ENTRYPOINT: ShutDownPC.py
-  ICON_FILE: ShutDownPC_Icon.png
+  ICON_FILE: ShutDownPC_Icon.ico
 
 jobs:
   build:
