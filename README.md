@@ -90,35 +90,9 @@ xattr -dr com.apple.quarantine "ShutdownTimer-<version>.app"
 ---
 
 ## 🛑 Canceling Shutdown
-### Once the timer is active:
+**Once the timer is active:**
 - The **START** button changes to **CANCEL**
 - Press **CANCEL** to immediately abort the scheduled shutdown
-
----
-
-## 🧩 Project Structure
-
-```plaintext
-ShutdownTimer/
-├─ ShutDownPC.py
-├─ ShutDownPC_Icon.png
-├─ README.md
-├─ requirements.txt
-└─ .gitignore
-```
-
---- 
-
-## 🛠️ Technical Notes
-
-- Uses subprocess instead of os.system for safer command execution
-- OS-specific shutdown logic is isolated and easy to extend
-- Written with readability and maintainability in mind
-
----
-
-## 📄 License
-**MIT License** — free to use, modify, and distribute.
 
 ---
 ## 👤 Author
