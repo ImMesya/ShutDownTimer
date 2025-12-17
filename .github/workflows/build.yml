@@ -37,11 +37,7 @@ jobs:
       - name: Build (Windows)
         if: runner.os == 'Windows'
         run: |
-          pyinstaller --noconfirm --onefile --windowed ^
-            --name ShutdownTimer ^
-            --icon ShutDownPC_Icon.png ^
-            --add-data "ShutDownPC_Icon.png;." ^
-            ShutDownPC.py
+          pyinstaller --noconfirm --onefile --windowed --name ShutdownTimer --icon ShutDownPC_Icon.png --add-data "ShutDownPC_Icon.png;." ShutDownPC.py
           powershell -Command "Compress-Archive -Force dist/ShutdownTimer.exe dist/ShutdownTimer-windows.zip"
 
       # -------- BUILD (Linux) --------
