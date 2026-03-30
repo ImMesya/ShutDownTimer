@@ -16,11 +16,11 @@ Features:
 from __future__ import annotations
 
 import os
-import sys
-import platform
 import subprocess
+import sys
 from dataclasses import dataclass
 from datetime import timedelta
+from pathlib import Path
 
 from PyQt5.QtCore import QDateTime, QTime
 from PyQt5.QtGui import QFont, QIcon
@@ -36,14 +36,21 @@ from PyQt5.QtWidgets import (
     qApp,
 )
 
+from app_meta import APP_DISPLAY_NAME, APP_VERSION, ICON_FILE
+
 
 SECONDS_IN_DAY = 24 * 60 * 60
 MIN_CONFIRM_SECONDS = 5 * 60
+FONT_PIXEL_SIZE = 32
+START_LABEL = "START"
+CANCEL_LABEL = "CANCEL"
+IS_WINDOWS = sys.platform.startswith("win")
+WINDOWS_SHUTDOWN_EXE = str(Path(os.environ.get("SystemRoot", r"C:\Windows")) / "System32" / "shutdown.exe")
 
 def resource_path(relative_path: str) -> str:
-    """Get absolute path to resource, works for dev and for PyInstaller onefile."""
-    base_path = getattr(sys, "_MEIPASS", os.path.abspath("."))
-    return os.path.join(base_path, relative_path)
+    """Get an absolute resource path for source and frozen builds."""
+    base_path = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return str(base_path / relative_path)
 
 
 @dataclass(frozen=True)
@@ -61,13 +68,11 @@ def get_shutdown_command(seconds: int) -> ShutdownCommand:
     - Windows supports seconds directly.
     - Linux/macOS classic 'shutdown' generally supports minutes granularity.
     """
-    system = platform.system().lower()
-
-    if "windows" in system:
+    if IS_WINDOWS:
         # Windows: seconds supported
         return ShutdownCommand(
-            shutdown_args=["shutdown", "/s", "/t", str(int(seconds))],
-            cancel_args=["shutdown", "/a"],
+            shutdown_args=[WINDOWS_SHUTDOWN_EXE, "/s", "/t", str(int(seconds))],
+            cancel_args=[WINDOWS_SHUTDOWN_EXE, "/a"],
         )
 
     # Linux/macOS: use minutes (ceil to 1 minute if >0)
@@ -102,13 +107,14 @@ def run_command(args: list[str]) -> tuple[bool, str]:
 class MainWindow(QWidget):
     def __init__(self) -> None:
         super().__init__()
+        self.timer_active = False
 
         # -------- UI setup --------
         main_layout = QVBoxLayout(self)
 
         # Use a large but still practical font (100px is usually too big for most screens)
         font = QFont()
-        font.setPixelSize(32)
+        font.setPixelSize(FONT_PIXEL_SIZE)
 
         # Mode selection
         mode_layout = QHBoxLayout()
@@ -136,7 +142,7 @@ class MainWindow(QWidget):
         # Buttons
         btn_layout = QHBoxLayout()
 
-        self.start_button = QPushButton("START")
+        self.start_button = QPushButton(START_LABEL)
         self.start_button.setFont(font)
         self.start_button.clicked.connect(self.on_start_cancel_clicked)
 
@@ -148,14 +154,12 @@ class MainWindow(QWidget):
         btn_layout.addWidget(self.exit_button)
         main_layout.addLayout(btn_layout)
 
-        self.setWindowTitle("Shutdown Timer")
+        self.setWindowTitle(APP_DISPLAY_NAME)
 
         # Icon is optional; don't crash if missing
-        icon_path = resource_path("ShutDownPC_Icon.ico")
+        icon_path = resource_path(ICON_FILE)
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
-
-        self.setLayout(main_layout)
 
     # -------- Event handlers --------
 
@@ -163,10 +167,10 @@ class MainWindow(QWidget):
         qApp.quit()
 
     def on_start_cancel_clicked(self) -> None:
-        if self.start_button.text() == "START":
-            self.start_shutdown_timer()
-        else:
+        if self.timer_active:
             self.cancel_shutdown_timer()
+        else:
+            self.start_shutdown_timer()
 
     def on_mode_changed(self) -> None:
         """
@@ -241,7 +245,8 @@ class MainWindow(QWidget):
             "Timer set",
             f"Your PC will shut down in {timedelta(seconds=seconds)}.",
         )
-        self.start_button.setText("CANCEL")
+        self.timer_active = True
+        self.start_button.setText(CANCEL_LABEL)
 
     def cancel_shutdown_timer(self) -> None:
         # Cancel command depends on OS
@@ -259,11 +264,14 @@ class MainWindow(QWidget):
             return
 
         QMessageBox.information(self, "Cancelled", "Shutdown timer cancelled. You can set a new one.")
-        self.start_button.setText("START")
+        self.timer_active = False
+        self.start_button.setText(START_LABEL)
 
 
 def main() -> int:
     app = QApplication(sys.argv)
+    app.setApplicationName(APP_DISPLAY_NAME)
+    app.setApplicationVersion(APP_VERSION)
     window = MainWindow()
     window.show()
     return app.exec_()
